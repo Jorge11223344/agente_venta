@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Arenito - Agente de Ventas</title>
+</head>
+<body style="font-family: Arial; background:#f6f6f6;">
+  <div style="max-width:800px;margin:30px auto;background:#fff;padding:18px;border-radius:12px;">
+    <h2>Hola, soy Arenito 🐾</h2>
+    <div id="history" style="height:55vh;overflow:auto;border:1px solid #eee;padding:12px;border-radius:10px;"></div>
+
+    <form id="form" style="display:flex;gap:10px;margin-top:10px;">
+      <textarea id="input" rows="1" style="flex:1;padding:10px;border-radius:10px;"></textarea>
+      <button id="btn" type="submit" style="padding:10px 14px;border-radius:10px;">Enviar</button>
+    </form>
+  </div>
+
+<script>
+  const historyEl = document.getElementById("history");
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+  const btn = document.getElementById("btn");
+
+  let history = [];
+
+  function add(role, text) {
+    const div = document.createElement("div");
+    div.style.margin = "10px 0";
+    div.style.padding = "10px 12px";
+    div.style.borderRadius = "10px";
+    div.style.maxWidth = "85%";
+    div.style.whiteSpace = "pre-wrap";
+    div.style.background = role === "user" ? "#e8f0ff" : "#f2f2f2";
+    if (role === "user") div.style.marginLeft = "auto";
+    div.textContent = text;
+    historyEl.appendChild(div);
+    historyEl.scrollTop = historyEl.scrollHeight;
+
+    history.push({ role: role === "user" ? "user" : "model", text });
+    if (history.length > 12) history = history.slice(-12);
+  }
+
+  add("bot", "¡Hola! Soy tu asistente de ventas para arena sanitaria. ¿En qué puedo ayudarte hoy?");
+
+  async function send(message) {
+    btn.disabled = true; input.disabled = true;
+
+    const res = await fetch("/api/chat/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, history })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    btn.disabled = false; input.disabled = false; input.focus();
+
+    if (!res.ok) return add("bot", data.error || "Ocurrió un error.");
+    add("bot", data.answer || "");
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = "";
+    add("user", msg);
+    send(msg);
+  });
+</script>
+</body>
+</html>
